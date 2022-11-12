@@ -1,0 +1,10 @@
+version: "3.1"
+services:
+  postgres:
+    image: postgres:14.1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: star_wars
+    ports:
+      - "1111:5432"
