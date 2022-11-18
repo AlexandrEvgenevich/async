@@ -33,15 +33,19 @@ class StarWars(Base):
 
 
 def get_count():
-    return requests.get('https://swapi.dev/api/people/').json()['count']
+    return requests.get('https://swapi.dev/api/people/').json()['count'] + 1
 
 
 async def get_stuff(number):
     session = aiohttp.ClientSession()
     response = await session.get(f'https://swapi.dev/api/people/{number}')
-    json_data = await response.json()
-    await session.close()
-    return json_data
+    if response.status == 200:
+        json_data = await response.json()
+        await session.close()
+        return json_data
+    else:
+        await session.close()
+        return 'err'
 
 
 async def main():
@@ -52,29 +56,34 @@ async def main():
     number = 1
     for item in range(0, get_count()):
         res = await get_stuff(number)
+        if res != 'err':
+            fil = ', '.join(res['films'])
+            spe = ', '.join(res['species'])
+            sta = ', '.join(res['starships'])
+            veh = ', '.join(res['vehicles'])
 
-        fil = ', '.join(res['films'])
-        spe = ', '.join(res['species'])
-        sta = ', '.join(res['starships'])
-        veh = ', '.join(res['vehicles'])
+            number += 1
+            async with Session() as session:
+                session.add(StarWars(
+                    name=str(res['name']),
+                    birth_year=str(res['birth_year']),
+                    eye_color=str(res['eye_color']),
+                    films=str(fil),
+                    gender=str(res['gender']),
+                    hair_color=str(res['hair_color']),
+                    height=str(res['height']),
+                    homeworld=str(res['homeworld']),
+                    mass=str(res['mass']),
+                    skin_color=str(res['birth_year']),
+                    species=str(spe),
+                    starships=str(sta),
+                    vehicles=str(veh)
+                ))
+                await session.commit()
+                await session.close()
 
-        number += 1
-        async with Session() as session:
-            session.add(StarWars(
-                name=res['name'],
-                birth_year=res['birth_year'],
-                eye_color=res['eye_color'],
-                films=str(fil),
-                gender=res['gender'],
-                hair_color=res['hair_color'],
-                height=res['height'],
-                homeworld=res['homeworld'],
-                mass=res['mass'],
-                skin_color=res['birth_year'],
-                species=str(spe),
-                starships=str(sta),
-                vehicles=str(veh)
-            ))
-            await session.commit()
+        else:
+            number += 1
+            print('404 not found')
 
 asyncio.run(main())
